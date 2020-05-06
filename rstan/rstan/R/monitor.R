@@ -585,9 +585,8 @@ monitor <- function(sims, warmup = floor(dim(sims)[1] / 2),
 
   out <- vector("list", length(parnames))
   out <- setNames(out, parnames)
-  # loop over parameters
-  for (i in seq_along(out)) {
-    sims_i <- sims[, , i]
+
+  get_summ = function(sims_i) {
     valid <- all(is.finite(sims_i))
     quan <- unname(quantile(sims_i, probs = probs, na.rm = TRUE))
     quan2 <- quantile(sims_i, probs = c(0.05, 0.5, 0.95), na.rm = TRUE)
@@ -600,11 +599,23 @@ monitor <- function(sims, warmup = floor(dim(sims)[1] / 2),
     ess_bulk <- round(ess_bulk(sims_i))
     ess_tail <- round(ess_tail(sims_i))
     ess <- round(ess_rfun(sims_i))
-    out[[i]] <- c(
-      mean, mcse_mean, sd, quan, ess, rhat,
-      valid, quan2, mcse_quan, mcse_sd, ess_bulk, ess_tail
+    return(
+      c(mean, mcse_mean, sd, quan, ess, rhat,
+            valid, quan2, mcse_quan, mcse_sd, ess_bulk, ess_tail)
     )
   }
+
+  exps = list("probs","fft_next_good_size", "autocovariance", "autocorrelation",
+              "z_scale", "u_scale", "r_scale", "split_chains",
+              "is_constant", "rhat_rfun", "ess_rfun", "Rhat",
+              "ess_bulk", "ess_tail", "ess_quantile", "ess_mean",
+              "ess_sd", "conv_quantile", "mcse_quantile", "mcse_mean", "mcse_sd")
+
+  cl <- parallel::makeCluster(min(getOption("mc.cores",1L), length(parnames)))
+  parallel::clusterExport(cl, exps)
+  out <- parallel::parApply(cl = cl, X = sims, MARGIN=3, FUN = callFun)
+  parallel::stopCluster(cl);
+
   
   out <- as.data.frame(do.call(rbind, out))
   probs_str <- names(quantile(sims_i, probs = probs, na.rm = TRUE))
