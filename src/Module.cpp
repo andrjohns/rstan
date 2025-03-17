@@ -4,6 +4,7 @@
 #include <rstan/io/rlist_ref_var_context.hpp>
 #include <rstan/io/r_ostream.hpp>
 #include <rstan/stan_args.hpp>
+#include <stan_rng_override.hpp>
 
 /*
 RCPP_MODULE(class_model_base) {
@@ -102,7 +103,7 @@ write_array(stan::model::model_base* user_model,
             unsigned int random_seed = 0, unsigned int id = 0) {
   std::vector<int> params_i;
   std::vector<double> constrained_params;
-  boost::ecuyer1988 rng = stan::services::util::create_rng(random_seed, id);
+  stan::rng_t rng = stan::services::util::create_rng(random_seed, id);
   user_model->write_array(rng, params_r, params_i, constrained_params, 
                           include_tparams, include_gqs, &Rcpp::Rcout);
   return constrained_params;

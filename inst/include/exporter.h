@@ -2,19 +2,19 @@
 #define RSTAN_EXPORTER_H
 
 #include <RcppCommon.h>
-#include <boost/random/additive_combine.hpp>
+#include <stan_rng_override.hpp>
 #include <iostream>
 
 namespace Rcpp {
-  SEXP wrap(boost::ecuyer1988 RNG);
-  SEXP wrap(boost::ecuyer1988& RNG);
+  SEXP wrap(stan::rng_t RNG);
+  SEXP wrap(stan::rng_t& RNG);
   SEXP wrap(std::ostream stream);
-  template <> boost::ecuyer1988 as(SEXP ptr_RNG);
-  template <> boost::ecuyer1988& as(SEXP ptr_RNG);
+  template <> stan::rng_t as(SEXP ptr_RNG);
+  template <> stan::rng_t& as(SEXP ptr_RNG);
   template <> std::ostream* as(SEXP ptr_stream);
   namespace traits {
-    template <> class Exporter<boost::ecuyer1988&>;
-    template <> struct input_parameter<boost::ecuyer1988&>;
+    template <> class Exporter<stan::rng_t&>;
+    template <> struct input_parameter<stan::rng_t&>;
   }
 }
 
@@ -22,15 +22,15 @@ namespace Rcpp {
 #include <Rcpp.h>
 
 namespace Rcpp {
-  SEXP wrap(boost::ecuyer1988 RNG){
-    boost::ecuyer1988* ptr_RNG = &RNG;
-    Rcpp::XPtr<boost::ecuyer1988> Xptr_RNG(ptr_RNG);
+  SEXP wrap(stan::rng_t RNG){
+    stan::rng_t* ptr_RNG = &RNG;
+    Rcpp::XPtr<stan::rng_t> Xptr_RNG(ptr_RNG);
     return Xptr_RNG;
   }
 
-  SEXP wrap(boost::ecuyer1988& RNG){
-    boost::ecuyer1988* ptr_RNG = &RNG;
-    Rcpp::XPtr<boost::ecuyer1988> Xptr_RNG(ptr_RNG);
+  SEXP wrap(stan::rng_t& RNG){
+    stan::rng_t* ptr_RNG = &RNG;
+    Rcpp::XPtr<stan::rng_t> Xptr_RNG(ptr_RNG);
     return Xptr_RNG;
   }
 
@@ -40,15 +40,15 @@ namespace Rcpp {
     return Xptr_stream;
   }
 
-  template <> boost::ecuyer1988 as(SEXP ptr_RNG) {
-    Rcpp::XPtr<boost::ecuyer1988> ptr(ptr_RNG);
-    boost::ecuyer1988& RNG = *ptr; 
+  template <> stan::rng_t as(SEXP ptr_RNG) {
+    Rcpp::XPtr<stan::rng_t> ptr(ptr_RNG);
+    stan::rng_t& RNG = *ptr;
  		return RNG;
   }
 
-  template <> boost::ecuyer1988& as(SEXP ptr_RNG) {
-    Rcpp::XPtr<boost::ecuyer1988> ptr(ptr_RNG);
-    boost::ecuyer1988& RNG = *ptr; 
+  template <> stan::rng_t& as(SEXP ptr_RNG) {
+    Rcpp::XPtr<stan::rng_t> ptr(ptr_RNG);
+    stan::rng_t& RNG = *ptr;
  		return RNG;
   }
 
@@ -59,18 +59,18 @@ namespace Rcpp {
 
 
   namespace traits {
-    template <> class Exporter<boost::ecuyer1988&> {
+    template <> class Exporter<stan::rng_t&> {
     public:
-      Exporter( SEXP x ) : t(Rcpp::as<boost::ecuyer1988&>(x)) {}
-      inline boost::ecuyer1988& get(){ return t ; }
+      Exporter( SEXP x ) : t(Rcpp::as<stan::rng_t&>(x)) {}
+      inline stan::rng_t& get(){ return t ; }
     private:
-      boost::ecuyer1988& t ;
-    } ; 
+      stan::rng_t& t ;
+    } ;
 
     template <>
-    struct input_parameter<boost::ecuyer1988&> {
-      typedef typename Rcpp::ConstReferenceInputParameter<boost::ecuyer1988&> type ;
-      //typedef typename boost::ecuyer1988& type ;
+    struct input_parameter<stan::rng_t&> {
+      typedef typename Rcpp::ConstReferenceInputParameter<stan::rng_t&> type ;
+      //typedef typename stan::rng_t& type ;
     };
   }
 

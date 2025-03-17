@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include <boost/random/additive_combine.hpp>
+#include <stan_rng_override.hpp>
 
 RcppExport SEXP get_stream_() {
   std::ostream* pstream(&Rcpp::Rcout);
@@ -9,9 +9,7 @@ RcppExport SEXP get_stream_() {
 
 RcppExport SEXP get_rng_(SEXP seed) {
   int seed_ = Rcpp::as<int>(seed);
-  boost::ecuyer1988* rng = new boost::ecuyer1988(seed_);
-  Rcpp::XPtr<boost::ecuyer1988> ptr(rng, true);
+  stan::rng_t* rng = new stan::rng_t(seed_);
+  Rcpp::XPtr<stan::rng_t> ptr(rng, true);
   return ptr;
 }
-
-

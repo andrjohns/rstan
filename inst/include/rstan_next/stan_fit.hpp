@@ -5,6 +5,7 @@
 #include <rstan_next/stan_fit_base.hpp>
 
 #include <stan/model/model_base.hpp>
+#include <stan_rng_override.hpp>
 
 namespace rstan {
 
@@ -14,7 +15,7 @@ private:
   SEXP model_sexp_;
   Rcpp::XPtr<stan::model::model_base> model_xptr_;
   stan::model::model_base* model_;
-  boost::ecuyer1988 base_rng;
+  stan::rng_t base_rng;
   const std::vector<std::string> names_;
   const std::vector<std::vector<unsigned int> > dims_;
   const unsigned int num_params_;

@@ -66,6 +66,8 @@
 #include <stan/services/sample/hmc_static_unit_e_adapt.hpp>
 #include <stan/services/sample/standalone_gqs.hpp>
 
+#include <stan_rng_override.hpp>
+
 namespace rstan {
 
 namespace {
@@ -373,7 +375,7 @@ std::vector<double> unconstrained_to_constrained(stan::model::model_base* model,
                                                  const std::vector<double>& params) {
   std::vector<int> params_i;
   std::vector<double> constrained_params;
-  boost::ecuyer1988 rng = stan::services::util::create_rng(random_seed, id);
+  stan::rng_t rng = stan::services::util::create_rng(random_seed, id);
   model->write_array(rng, const_cast<std::vector<double>&>(params), params_i,
                      constrained_params);
   return constrained_params;
@@ -392,7 +394,7 @@ int command(stan_args& args,
             Rcpp::List& holder,
             const std::vector<size_t>& qoi_idx,
             const std::vector<std::string>& fnames_oi,
-            boost::ecuyer1988& base_rng) {
+            stan::rng_t& base_rng) {
 
   stan::math::init_threadpool_tbb();
 
