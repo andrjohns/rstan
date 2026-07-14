@@ -108,7 +108,7 @@ jobs:
     name: Check Reverse Dependencies (Batch ${{ matrix.group }})
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max-parallel || 5 }}
+      max-parallel: ${{ inputs.max-parallel }}
       matrix: ${{ fromJson(needs.prepare-library.outputs.deps_matrix) }}
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
