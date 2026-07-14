@@ -194,8 +194,10 @@ jobs:
           all_pkgs <- gsub("^\\./(.*)\\.Rcheck", "\\1", list.dirs(".", recursive = FALSE))
 
           install_failures <- unique(res$Package[res$Check == "whether package can be installed"])
+          install_failures <- install_failures[order(install_failures)]
           check_statuses <- c("tests", "re-building of vignette outputs", "examples", "examples with --run-donttest")
           check_failures <- unique(res$Package[res$Check %in% check_statuses])
+          check_failures <- check_failures[order(check_failures)]
 
           summary_tbl <- knitr::kable(
             data.frame(
