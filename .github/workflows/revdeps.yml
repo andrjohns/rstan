@@ -39,6 +39,11 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ref: ${{ (inputs.pkg-source == 'CRAN' || inputs.pkg-source == 'cran') && 'develop' || inputs.pkg-source }}
+
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
@@ -80,15 +85,10 @@ jobs:
             "local::./INLA_25.10.19.tar.gz"
           ))
 
-          pkg_src <- "${{ inputs.pkg-source || 'develop'}}"
           # Install dev versions last so that they're not used for any dependencies
-          if (tolower(pkg_src) == "cran") {
-            install.packages(c("StanHeaders", "rstan"))
-          } else {
-            pak::pak(paste0("stan-dev/rstan/StanHeaders@", pkg_src))
-            if (pkg == "rstan") {
-              pak::pak(paste0("stan-dev/rstan/rstan/rstan@", pkg_src))
-            }
+          pak::pak("local::./StanHeaders")
+          if (pkg == "rstan") {
+            pak::pak("local::./rstan/rstan")
           }
 
           rstantools_src <- "${{ inputs.rstantools-source || 'CRAN'}}"
