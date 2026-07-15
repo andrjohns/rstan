@@ -241,7 +241,7 @@ jobs:
             "# Reverse-Dependency Status\n",
             "## Summary\n",
             summary_tbl,
-            "## Install Failure\ns",
+            "## Install Failure\n",
             install_logs,
             "## Vignette/Test Failures\n",
             check_logs),
