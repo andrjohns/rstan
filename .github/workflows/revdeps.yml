@@ -28,6 +28,11 @@ on:
         required: false
         default: 'CRAN'
         type: string
+      run-donttest:
+        description: 'Whether to run "donttest" examples for each package (increasing check time), default is false'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   prepare-library:
@@ -75,7 +80,7 @@ jobs:
           dir.create("/tmp/PakLibrary")
           .libPaths(c("/tmp/PakLibrary", .libPaths()))
           system("sudo apt-get install -y libcurl4-openssl-dev")
-          install.packages(c("pak", "rstantools"))
+          install.packages(c("pak", "rstantools", "furrr"))
 
           # Lookup and (attempt to) install all dependencies for reverse-dependencies
           pkg_deps <- tools::package_dependencies(pkg, reverse = TRUE)[[pkg]]
@@ -168,7 +173,7 @@ jobs:
           NOT_CRAN:
           _R_CHECK_CRAN_INCOMING_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
-          _R_CHECK_DONTTEST_EXAMPLES_: false
+          _R_CHECK_DONTTEST_EXAMPLES_: ${{ inputs.run-donttest }}
           _R_CHECK_ELAPSED_TIMEOUT_: 1h
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
@@ -181,8 +186,13 @@ jobs:
 
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
-          Sys.unsetenv("NOT_CRAN")
-          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = parallel::detectCores() - 1)
+          
+          # Use furrr for parallelism, so that packages are dynamically allocated to available cores
+          future::plan(future:multisession, workers = parallel::detectCores())
+          furrr::future_walk(curr_deps, function(dep) {
+            tools::check_packages_in_dir("testdir", pfiles = paste0(dep,".tar.gz"), check_args = "--as-cran --no-manual", Ncpus = 1)
+          }, .options = furrr::furrr_options(seed = TRUE, scheduling = Inf))
+          future::plan(future::sequential)
         shell: Rscript {0}
 
       - uses: actions/upload-artifact@v7
