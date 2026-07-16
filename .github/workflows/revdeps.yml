@@ -84,7 +84,8 @@ jobs:
             "github::stan-dev/cmdstanr",
             "github::ecmerkle/blavsam",
             "github::CraigWangStat/eggCountsExtra",
-            "local::./INLA_25.10.19.tar.gz"
+            "local::./INLA_25.10.19.tar.gz",
+            "any::qgraph"
           ))
           # Install dev versions last so that they're not used for any dependencies
           pak::pak("local::./StanHeaders")
@@ -143,6 +144,9 @@ jobs:
         with:
           r-version: 'release'
 
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: quarto-dev/quarto-actions/setup@v2
+
       - name: Configure Makevars
         run: |
           mkdir -p ~/.R
@@ -165,7 +169,7 @@ jobs:
           # Install any system dependencies needed for packages
           rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
           pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
-          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev")
+          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev texlive-latex-base texlive-latex-recommended texlive-fonts-recommended texlive-luatex texlive-latex-extra")
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           Sys.unsetenv("NOT_CRAN")
