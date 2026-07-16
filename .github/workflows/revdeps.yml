@@ -1,7 +1,7 @@
 ---
 
 name: Reverse Dependencies
-run-name: Reverse Dependencies (${{ inputs.package || 'rstan' }}@${{ github.sha }})
+run-name: Reverse Dependencies (${{ inputs.package }}@${{ github.sha }})
 on:
   workflow_dispatch:
     inputs:
@@ -52,8 +52,8 @@ jobs:
       - name: Download recursive dependencies, batch dependencies to check
         id: dep-batches
         run: |
-          batch_size <- ${{ inputs.batch-size || 3 }}
-          pkg <- "${{ inputs.package || 'rstan' }}"
+          batch_size <- ${{ inputs.batch-size }}
+          pkg <- "${{ inputs.package }}"
 
           # Parallelise building as much as possible
           options(Ncpus = parallel::detectCores())
@@ -121,7 +121,7 @@ jobs:
     name: Check Reverse Dependencies (Batch ${{ matrix.group }})
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 5
       matrix: ${{ fromJson(needs.prepare-library.outputs.deps_matrix) }}
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
@@ -163,7 +163,6 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_DONTTEST_EXAMPLES_: false
           _R_CHECK_ELAPSED_TIMEOUT_: 1h
-          MAKEFLAGS: -j2
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
@@ -176,8 +175,7 @@ jobs:
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           Sys.unsetenv("NOT_CRAN")
-          Sys.getenv("MAKEFLAGS")
-          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = 2)
+          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = parallel::detectCores() - 1)
         shell: Rscript {0}
 
       - uses: actions/upload-artifact@v7
