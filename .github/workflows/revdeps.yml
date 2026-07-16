@@ -132,6 +132,7 @@ jobs:
       _R_CHECK_CRAN_INCOMING_REMOTE_: false
       _R_CHECK_DONTTEST_EXAMPLES_: false
       _R_CHECK_ELAPSED_TIMEOUT_: 1h
+      _R_CHECK_SYSTEM_CLOCK_: 0
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -163,6 +164,7 @@ jobs:
           _R_CHECK_DONTTEST_EXAMPLES_: false
           _R_CHECK_ELAPSED_TIMEOUT_: 1h
           MAKEFLAGS: -j2
+          _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
 
