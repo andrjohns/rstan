@@ -29,7 +29,7 @@ on:
         default: 'CRAN'
         type: string
       run-donttest:
-        description: 'Whether to run "donttest" examples for each package (increasing check time), default is false'
+        description: 'Run `donttest` examples for each package (increasing check time), default is false'
         required: false
         default: false
         type: boolean
@@ -50,18 +50,6 @@ jobs:
           repository: stan-dev/rstan
           ref: ${{ (inputs.pkg-source == 'CRAN' || inputs.pkg-source == 'cran') && 'develop' || inputs.pkg-source }}
 
-      - name: Restore cached INLA source
-        id: cache-inla
-        uses: actions/cache@v6
-        with:
-          path: /tmp/INLA_25.10.19.tar.gz
-          key: inla-25.10.19
-
-      - name: Download INLA source if not cached
-        if: steps.cache-inla.outputs.cache-hit != 'true'
-        run: |
-          wget https://inla.r-inla-download.org/R/stable/src/contrib/INLA_25.10.19.tar.gz -O /tmp/INLA_25.10.19.tar.gz
-          
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
@@ -71,45 +59,42 @@ jobs:
         run: |
           batch_size <- ${{ inputs.batch-size }}
           pkg <- "${{ inputs.package }}"
-
           # Parallelise building as much as possible
           options(Ncpus = parallel::detectCores())
           Sys.setenv(MAKEFLAGS = paste0("-j", parallel::detectCores()))
-
           # Initialise a standalone library
           dir.create("/tmp/PakLibrary")
           .libPaths(c("/tmp/PakLibrary", .libPaths()))
           system("sudo apt-get install -y libcurl4-openssl-dev")
           install.packages(c("pak", "rstantools"))
-
           # Lookup and (attempt to) install all dependencies for reverse-dependencies
           pkg_deps <- tools::package_dependencies(pkg, reverse = TRUE)[[pkg]]
           rec_deps <- unique(do.call(c, tools::package_dependencies(pkg_deps, which = 'all')))
           install.packages(rec_deps)
-
           # Remaining packages will be bioconductor or other non-CRAN packages, install manually
           rec_deps <- rec_deps[!(rec_deps %in% installed.packages()[,"Package"])]
           rec_deps <- rec_deps[!(rec_deps %in% c("blavsam", "eggCountsExtra", "BRugs", "cmdstanr", "INLA"))]
-
+          download.file(
+            url = "https://inla.r-inla-download.org/R/stable/src/contrib/INLA_25.10.19.tar.gz",
+            destfile = "INLA_25.10.19.tar.gz",
+            mode = "wb"
+          )
           pak::pak(c(
             rec_deps,
             "github::stan-dev/cmdstanr",
             "github::ecmerkle/blavsam",
             "github::CraigWangStat/eggCountsExtra",
-            "local::/tmp/INLA_25.10.19.tar.gz"
+            "local::./INLA_25.10.19.tar.gz"
           ))
-
           # Install dev versions last so that they're not used for any dependencies
           pak::pak("local::./StanHeaders")
           if (pkg == "rstan") {
             pak::pak("local::./rstan/rstan")
           }
-
           rstantools_src <- "${{ inputs.rstantools-source || 'CRAN'}}"
           if (tolower(rstantools_src) != "cran") {
             pak::pak(paste0("stan-dev/rstantools@", rstantools_src))
           }
-
           # Split dependencies into requested batch size and
           # restructure into format for actions 'matrix' argument
           curr_deps <- split(pkg_deps, ceiling(seq_along(pkg_deps) / batch_size))
@@ -142,7 +127,7 @@ jobs:
       NOT_CRAN:
       _R_CHECK_CRAN_INCOMING_: false
       _R_CHECK_CRAN_INCOMING_REMOTE_: false
-      _R_CHECK_DONTTEST_EXAMPLES_: false
+      _R_CHECK_DONTTEST_EXAMPLES_: ${{ inputs.run-donttest }}
       _R_CHECK_ELAPSED_TIMEOUT_: 1h
       _R_CHECK_SYSTEM_CLOCK_: 0
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -166,27 +151,24 @@ jobs:
           CXXFLAGS += -w
           CXX17FLAGS += -w
           EOF
-
       - name: Run reverse-dependency checks
         env:
           R_LIBS_USER: /tmp/PakLibrary
           NOT_CRAN:
           _R_CHECK_CRAN_INCOMING_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
-          _R_CHECK_DONTTEST_EXAMPLES_: ${{ inputs.run-donttest }}
+          _R_CHECK_DONTTEST_EXAMPLES_: false
           _R_CHECK_ELAPSED_TIMEOUT_: 1h
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
-
           # Install any system dependencies needed for packages
           rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
           pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
           system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev")
-
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
-          
+          Sys.unsetenv("NOT_CRAN")
           tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = parallel::detectCores() - 1)
         shell: Rscript {0}
 
@@ -220,16 +202,13 @@ jobs:
         run: |
           setwd("checkresults")
           install.packages("knitr")
-
           res <- tools::check_packages_in_dir_details(".")
           all_pkgs <- gsub("^\\./(.*)\\.Rcheck", "\\1", list.dirs(".", recursive = FALSE))
-
           install_failures <- unique(res$Package[res$Check == "whether package can be installed"])
           install_failures <- install_failures[order(install_failures)]
           check_statuses <- c("tests", "re-building of vignette outputs", "examples", "examples with --run-donttest")
           check_failures <- unique(res$Package[res$Check %in% check_statuses])
           check_failures <- check_failures[order(check_failures)]
-
           summary_tbl <- knitr::kable(
             data.frame(
               "OK" = length(setdiff(all_pkgs, c(install_failures, check_failures))),
@@ -238,7 +217,6 @@ jobs:
               check.names = FALSE
             )
           )
-
           install_logs <- sapply(install_failures, \(pkg) {
             paste0(c(
               paste("###", pkg),
@@ -254,7 +232,6 @@ jobs:
             )
           }) |>
             paste0(collapse = "\n")
-
           check_logs <- sapply(check_failures, \(pkg) {
             paste0(c(
               "",
@@ -272,7 +249,6 @@ jobs:
             )
           }) |>
             paste0(collapse = "\n")
-
           result_md <- paste0(c(
             "# Reverse-Dependency Status\n",
             "## Summary\n",
