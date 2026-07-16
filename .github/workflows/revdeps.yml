@@ -62,6 +62,7 @@ jobs:
           # Initialise a standalone library
           dir.create("/tmp/PakLibrary")
           .libPaths(c("/tmp/PakLibrary", .libPaths()))
+          system("sudo apt-get install -y libcurl4-openssl-dev")
           install.packages(c("pak", "rstantools"))
 
           # Lookup and (attempt to) install all dependencies for reverse-dependencies
