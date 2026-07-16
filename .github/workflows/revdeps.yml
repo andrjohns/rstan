@@ -129,7 +129,7 @@ jobs:
     name: Check Reverse Dependencies (Batch ${{ matrix.group }})
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix: ${{ fromJson(needs.prepare-library.outputs.deps_matrix) }}
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
@@ -165,21 +165,25 @@ jobs:
           CXXFLAGS += -w
           CXX17FLAGS += -w
           EOF
+
+      - name: Install system dependencies
+        run: |
+          curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
+          # Install any system dependencies needed for packages
+          rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
+          pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
+          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev texlive-latex-base texlive-latex-recommended texlive-fonts-extra texlive-fonts-recommended texlive-luatex texlive-latex-extra")
+  
       - name: Run reverse-dependency checks
         env:
           R_LIBS_USER: /tmp/PakLibrary
           NOT_CRAN:
           _R_CHECK_CRAN_INCOMING_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
-          _R_CHECK_DONTTEST_EXAMPLES_: false
+          _R_CHECK_DONTTEST_EXAMPLES_: ${{ inputs.run-donttest }}
           _R_CHECK_ELAPSED_TIMEOUT_: 1h
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
-          curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
-          # Install any system dependencies needed for packages
-          rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
-          pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
-          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev texlive-latex-base texlive-latex-recommended texlive-fonts-recommended texlive-luatex texlive-latex-extra")
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           Sys.unsetenv("NOT_CRAN")
