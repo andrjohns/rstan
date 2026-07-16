@@ -184,6 +184,9 @@ jobs:
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
+          # Install any system dependencies needed for packages
+          rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
+          pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           Sys.unsetenv("NOT_CRAN")
