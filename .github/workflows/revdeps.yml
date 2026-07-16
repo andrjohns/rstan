@@ -170,7 +170,7 @@ jobs:
           # Install any system dependencies needed for packages
           rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
           pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
-          system("sudo apt-get install -y pandoc")
+          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev")
 
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
