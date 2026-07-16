@@ -167,15 +167,11 @@ jobs:
           EOF
 
       - name: Install system dependencies
-        env:
-          R_LIBS_USER: /tmp/PakLibrary
         run: |
-          curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
-          # Install any system dependencies needed for packages
-          rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
-          pak::sysreqs_fix_installed(c(curr_deps, rec_deps))
-          system("sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev texlive-latex-base texlive-latex-recommended texlive-fonts-extra texlive-fonts-recommended texlive-luatex texlive-latex-extra")
-        shell: Rscript {0}
+          sudo apt-get install -y pandoc libudunits2-dev libglpk-dev libgsl0-dev \
+               texlive-latex-base texlive-latex-recommended texlive-fonts-extra \
+               texlive-fonts-recommended texlive-luatex texlive-latex-extra \
+               texlive-bibtex-extra
   
       - name: Run reverse-dependency checks
         env:
