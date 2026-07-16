@@ -80,7 +80,7 @@ jobs:
           dir.create("/tmp/PakLibrary")
           .libPaths(c("/tmp/PakLibrary", .libPaths()))
           system("sudo apt-get install -y libcurl4-openssl-dev")
-          install.packages(c("pak", "rstantools", "furrr"))
+          install.packages(c("pak", "rstantools"))
 
           # Lookup and (attempt to) install all dependencies for reverse-dependencies
           pkg_deps <- tools::package_dependencies(pkg, reverse = TRUE)[[pkg]]
@@ -187,12 +187,7 @@ jobs:
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           
-          # Use furrr for parallelism, so that packages are dynamically allocated to available cores
-          future::plan(future::multisession, workers = parallel::detectCores())
-          furrr::future_walk(curr_deps, function(dep) {
-            tools::check_packages_in_dir("testdir", pfiles = paste0(dep,".tar.gz"), check_args = "--as-cran --no-manual", Ncpus = 1)
-          }, .options = furrr::furrr_options(seed = TRUE, scheduling = Inf))
-          future::plan(future::sequential)
+          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = parallel::detectCores() - 1)
         shell: Rscript {0}
 
       - uses: actions/upload-artifact@v7
