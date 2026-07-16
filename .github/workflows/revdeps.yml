@@ -131,6 +131,7 @@ jobs:
       _R_CHECK_CRAN_INCOMING_: false
       _R_CHECK_CRAN_INCOMING_REMOTE_: false
       _R_CHECK_DONTTEST_EXAMPLES_: false
+      _R_CHECK_ELAPSED_TIMEOUT_: 1h
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -160,6 +161,8 @@ jobs:
           _R_CHECK_CRAN_INCOMING_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_DONTTEST_EXAMPLES_: false
+          _R_CHECK_ELAPSED_TIMEOUT_: 1h
+          MAKEFLAGS: -j2
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
 
@@ -171,7 +174,8 @@ jobs:
           dir.create("testdir")
           download.packages(curr_deps, "testdir", repos = "https://cran.rstudio.com")
           Sys.unsetenv("NOT_CRAN")
-          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = 3)
+          Sys.getenv("MAKEFLAGS")
+          tools::check_packages_in_dir("testdir", check_args = "--as-cran --no-manual", Ncpus = 2)
         shell: Rscript {0}
 
       - uses: actions/upload-artifact@v7
