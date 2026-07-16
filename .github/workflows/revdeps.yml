@@ -167,6 +167,8 @@ jobs:
           EOF
 
       - name: Install system dependencies
+        env:
+          R_LIBS_USER: /tmp/PakLibrary
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
           # Install any system dependencies needed for packages
