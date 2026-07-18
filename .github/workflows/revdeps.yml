@@ -164,9 +164,9 @@ jobs:
           rec_deps <- rec_deps[!(rec_deps %in% installed.packages()[,"Package"])]
           rec_deps <- rec_deps[!(rec_deps %in% c("blavsam", "eggCountsExtra", "BRugs", "cmdstanr", "INLA", "iwmm", "qs", "rkeops", "mcmcplots"))]
 
+          install.packages('cmdstanr', repos = c('https://stan-dev.r-universe.dev', getOption("repos")))
           pak::pak(c(
             paste0("any::", rec_deps),
-            "github::stan-dev/cmdstanr",
             "github::ecmerkle/blavsam",
             "github::CraigWangStat/eggCountsExtra",
             "local::/tmp/INLA_25.10.19.tar.gz",
