@@ -6,9 +6,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  rstan-revdeps:
+  posterior-revdeps:
     uses: andrjohns/ci-scripts/.github/workflows/revdeps.yml@revdeps
     with:
-      package: StanHeaders
-      stanheaders-source: v2.39.0
-      rstantools-source: compat
+      package: posterior
+      posterior-source: master
+
+  loo-revdeps:
+    uses: andrjohns/ci-scripts/.github/workflows/revdeps.yml@revdeps
+    with:
+      package: loo
+      loo-source: master
+
+  bayesplot-revdeps:
+    uses: andrjohns/ci-scripts/.github/workflows/revdeps.yml@revdeps
+    with:
+      package: bayesplot
+      bayesplot-source: master
