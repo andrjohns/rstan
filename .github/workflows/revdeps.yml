@@ -6,25 +6,49 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'Check rstan or just StanHeaders (default is rstan)'
+        description: 'Package to check (default is rstan)'
         required: false
         default: 'rstan'
         type: choice
         options:
           - rstan
           - StanHeaders
+          - rstantools
+          - loo
+          - posterior
+          - bayesplot
       batch-size:
-        description: 'Number of packages to check in each batch (default is 10)'
+        description: 'Number of packages to check in each batch (default is 15)'
         required: false
-        default: 10
+        default: 15
         type: number
-      pkg-source:
-        description: 'Source to use for rstan/StanHeaders (either a git ref or "CRAN", default is develop)'
+      rstan-source:
+        description: 'Source to use for rstan (either a git ref or "CRAN", default is develop)'
+        required: false
+        default: 'develop'
+        type: string
+      stanheaders-source:
+        description: 'Source to use for StanHeaders (either a git ref or "CRAN", default is develop)'
         required: false
         default: 'develop'
         type: string
       rstantools-source:
         description: Source to use for rstantools (either a git ref or "CRAN", default is CRAN)'
+        required: false
+        default: 'CRAN'
+        type: string
+      loo-source:
+        description: Source to use for loo (either a git ref or "CRAN", default is CRAN)'
+        required: false
+        default: 'CRAN'
+        type: string
+      posterior-source:
+        description: Source to use for posterior (either a git ref or "CRAN", default is CRAN)'
+        required: false
+        default: 'CRAN'
+        type: string
+      bayesplot-source:
+        description: Source to use for bayesplot (either a git ref or "CRAN", default is CRAN)'
         required: false
         default: 'CRAN'
         type: string
@@ -44,12 +68,59 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Clone rstan
+        if: inputs.rstan-source != 'CRAN' && inputs.rstan-source != 'cran'
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           repository: stan-dev/rstan
-          ref: ${{ (inputs.pkg-source == 'CRAN' || inputs.pkg-source == 'cran') && 'develop' || inputs.pkg-source }}
+          ref: ${{ inputs.rstan-source }}
+          path: rstan-source
 
+      - name: Clone StanHeaders
+        if: inputs.stanheaders-source != 'CRAN' && inputs.stanheaders-source != 'cran'
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: stan-dev/rstan
+          ref: ${{ inputs.stanheaders-source }}
+          path: StanHeaders-source
+
+      - name: Clone rstantools
+        if: inputs.rstantools-source != 'CRAN' && inputs.rstantools-source != 'cran'
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: stan-dev/rstantools
+          ref: ${{ inputs.rstantools-source }}
+          path: rstantools-source
+
+      - name: Clone loo
+        if: inputs.loo-source != 'CRAN' && inputs.loo-source != 'cran'
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: stan-dev/loo
+          ref: ${{ inputs.loo-source }}
+          path: loo-source
+
+      - name: Clone posterior
+        if: inputs.posterior-source != 'CRAN' && inputs.posterior-source != 'cran'
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: stan-dev/posterior
+          ref: ${{ inputs.posterior-source }}
+          path: posterior-source
+
+      - name: Clone bayesplot
+        if: inputs.bayesplot-source != 'CRAN' && inputs.bayesplot-source != 'cran'
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: stan-dev/bayesplot
+          ref: ${{ inputs.bayesplot-source }}
+          path: bayesplot-source
 
       - name: Restore cached INLA source
         id: cache-inla
@@ -62,7 +133,6 @@ jobs:
         if: steps.cache-inla.outputs.cache-hit != 'true'
         run: |
           wget https://inla.r-inla-download.org/R/stable/src/contrib/INLA_25.10.19.tar.gz -O /tmp/INLA_25.10.19.tar.gz
-          
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -73,18 +143,23 @@ jobs:
         run: |
           batch_size <- ${{ inputs.batch-size }}
           pkg <- "${{ inputs.package }}"
+
           # Parallelise building as much as possible
           options(Ncpus = parallel::detectCores())
           Sys.setenv(MAKEFLAGS = paste0("-j", parallel::detectCores()))
+
           # Initialise a standalone library
           dir.create("/tmp/PakLibrary")
           .libPaths(c("/tmp/PakLibrary", .libPaths()))
+
           system("sudo apt-get install -y libcurl4-openssl-dev")
           install.packages(c("pak", "rstantools"))
+
           # Lookup and (attempt to) install all dependencies for reverse-dependencies
           pkg_deps <- tools::package_dependencies(pkg, reverse = TRUE)[[pkg]]
           rec_deps <- unique(do.call(c, tools::package_dependencies(pkg_deps, which = 'all')))
           install.packages(rec_deps)
+
           # Remaining packages will be bioconductor or other non-CRAN packages, install manually
           rec_deps <- rec_deps[!(rec_deps %in% installed.packages()[,"Package"])]
           rec_deps <- rec_deps[!(rec_deps %in% c("blavsam", "eggCountsExtra", "BRugs", "cmdstanr", "INLA"))]
@@ -97,15 +172,25 @@ jobs:
             "local::/tmp/INLA_25.10.19.tar.gz",
             "any::qgraph"
           ))
+
+          install_dev <- function(pkg, pkg_src) {
+            if (tolower(pkg_src) == "cran") {
+              install.packages(pkg)
+            } else {
+              pkg <- ifelse(pkg == "rstan", "rstan/rstan/rstan",
+                             ifelse(pkg == "StanHeaders", "rstan/StanHeaders", pkg))
+              pak::pak(paste0("local::./", pkg, "-source"))
+            }
+          }
+
           # Install dev versions last so that they're not used for any dependencies
-          pak::pak("local::./StanHeaders")
-          if (pkg == "rstan") {
-            pak::pak("local::./rstan/rstan")
-          }
-          rstantools_src <- "${{ inputs.rstantools-source || 'CRAN'}}"
-          if (tolower(rstantools_src) != "cran") {
-            pak::pak(paste0("stan-dev/rstantools@", rstantools_src))
-          }
+          install_dev("StanHeaders", "${{ inputs.stanheaders-source }}")
+          install_dev("rstan", "${{ inputs.rstan-source }}")
+          install_dev("rstantools", "${{ inputs.rstantools-source }}")
+          install_dev("loo", "${{ inputs.loo-source }}")
+          install_dev("posterior", "${{ inputs.posterior-source }}")
+          install_dev("bayesplot", "${{ inputs.bayesplot-source }}")
+
           # Split dependencies into requested batch size and
           # restructure into format for actions 'matrix' argument
           curr_deps <- split(pkg_deps, ceiling(seq_along(pkg_deps) / batch_size))
@@ -172,7 +257,7 @@ jobs:
                texlive-latex-base texlive-latex-recommended texlive-fonts-extra \
                texlive-fonts-recommended texlive-luatex texlive-latex-extra \
                texlive-bibtex-extra
-  
+
       - name: Run reverse-dependency checks
         env:
           R_LIBS_USER: /tmp/PakLibrary
