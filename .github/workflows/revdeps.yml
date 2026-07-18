@@ -23,14 +23,14 @@ on:
         default: 15
         type: number
       rstan-source:
-        description: 'rstan source (either a git ref or "CRAN", default is develop)'
+        description: 'rstan source (either a git ref or "CRAN", default is CRAN)'
         required: false
-        default: 'develop'
+        default: 'CRAN'
         type: string
       stanheaders-source:
-        description: 'StanHeaders source (either a git ref or "CRAN", default is develop)'
+        description: 'StanHeaders source (either a git ref or "CRAN", default is CRAN)'
         required: false
-        default: 'develop'
+        default: 'CRAN'
         type: string
       rstantools-source:
         description: rstantools source (either a git ref or "CRAN", default is CRAN)'
@@ -193,6 +193,7 @@ jobs:
           install_dev("bayesplot", "${{ inputs.bayesplot-source }}")
 
           # Build CmdStan
+          dir.create("/tmp/.cmdstan")
           cmdstanr::install_cmdstan(cores = parallel::detectCores(), dir = "/tmp/.cmdstan")
 
           # Split dependencies into requested batch size and
