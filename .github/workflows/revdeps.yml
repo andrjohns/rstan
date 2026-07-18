@@ -279,6 +279,7 @@ jobs:
       - name: Run reverse-dependency checks
         env:
           R_LIBS_USER: /tmp/PakLibrary
+          CMDSTAN: /tmp/.cmdstan
           NOT_CRAN:
           _R_CHECK_CRAN_INCOMING_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
@@ -287,9 +288,6 @@ jobs:
           _R_CHECK_SYSTEM_CLOCK_: 0
         run: |
           curr_deps <- jsonlite::fromJSON('${{ matrix.deps }}')
-
-          # Install CmdStan
-          cmdstanr::install_cmdstan(cores = 4)
 
           # Install any system dependencies needed for packages
           rec_deps <- unique(do.call(c, tools::package_dependencies(curr_deps, which = 'all')))
