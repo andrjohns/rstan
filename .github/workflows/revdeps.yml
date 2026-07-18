@@ -1,7 +1,7 @@
 ---
 
 name: Reverse Dependencies
-run-name: Reverse Dependencies (${{ inputs.package }}@${{ github.sha }})
+run-name: Reverse Dependencies (${{ inputs.package }}@${{ inputs.package == 'rstan' && inputs.rstan-source || (inputs.package == 'StanHeaders' && inputs.stanheaders-source || (inputs.package == 'rstantools' && inputs.rstantools-source || (inputs.package == 'loo' && inputs.loo-source || (inputs.package == 'posterior' && inputs.posterior-source || (inputs.package == 'bayespot' && inputs.bayesplot-source || ''))))) }})
 on:
   workflow_dispatch:
     inputs:
@@ -23,32 +23,32 @@ on:
         default: 15
         type: number
       rstan-source:
-        description: 'Source to use for rstan (either a git ref or "CRAN", default is develop)'
+        description: 'rstan source (either a git ref or "CRAN", default is develop)'
         required: false
         default: 'develop'
         type: string
       stanheaders-source:
-        description: 'Source to use for StanHeaders (either a git ref or "CRAN", default is develop)'
+        description: 'StanHeaders source (either a git ref or "CRAN", default is develop)'
         required: false
         default: 'develop'
         type: string
       rstantools-source:
-        description: Source to use for rstantools (either a git ref or "CRAN", default is CRAN)'
+        description: rstantools source (either a git ref or "CRAN", default is CRAN)'
         required: false
         default: 'CRAN'
         type: string
       loo-source:
-        description: Source to use for loo (either a git ref or "CRAN", default is CRAN)'
+        description: loo source (either a git ref or "CRAN", default is CRAN)'
         required: false
         default: 'CRAN'
         type: string
       posterior-source:
-        description: Source to use for posterior (either a git ref or "CRAN", default is CRAN)'
+        description: posterior source (either a git ref or "CRAN", default is CRAN)'
         required: false
         default: 'CRAN'
         type: string
       bayesplot-source:
-        description: Source to use for bayesplot (either a git ref or "CRAN", default is CRAN)'
+        description: bayesplot source (either a git ref or "CRAN", default is CRAN)'
         required: false
         default: 'CRAN'
         type: string
