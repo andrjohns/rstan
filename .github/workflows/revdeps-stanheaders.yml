@@ -1,0 +1,14 @@
+---
+
+name: Reverse Dependencies
+run-name: Reverse Dependencies (test)
+on:
+  workflow_dispatch:
+
+jobs:
+  stanheaders-revdeps:
+    uses: andrjohns/ci-scripts/.github/workflows/revdeps.yml@revdeps
+    with:
+      package: StanHeaders
+      stanheaders-source: v2.39.0
+      rstantools-source: compat
