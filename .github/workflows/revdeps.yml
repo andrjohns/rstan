@@ -5,6 +5,9 @@ run-name: Reverse Dependencies (test)
 on:
   workflow_dispatch:
 
+permissions: 
+  actions: write
+
 jobs:
 
       
