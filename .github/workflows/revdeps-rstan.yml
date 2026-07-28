@@ -11,7 +11,6 @@ jobs:
     with:
       package: StanHeaders
       stanheaders-source: v2.39.0
-      rstantools-source: compat
       
   rstan-revdeps:
     uses: andrjohns/ci-scripts/.github/workflows/revdeps.yml@revdeps
@@ -19,5 +18,4 @@ jobs:
       package: rstan
       rstan-source: v2.39.0
       stanheaders-source: v2.39.0
-      rstantools-source: compat
       
